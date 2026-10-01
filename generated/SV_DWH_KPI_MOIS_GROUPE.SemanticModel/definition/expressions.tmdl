@@ -1,5 +1,0 @@
-expression SnowflakeServer = "SERVER" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
-
-expression SnowflakeWarehouse = "WAREHOUSE" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
-
-expression SnowflakeRole = "ROLE" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
