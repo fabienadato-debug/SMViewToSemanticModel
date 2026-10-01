@@ -1,0 +1,94 @@
+/// Reference table for product family hierarchy level 3 (sous-sous-famille) with multilingual labels and active flag. One row per unique (CODE_FAMILLE_GROUPE_1, CODE_FAMILLE_GROUPE_2, CODE_FAMILLE_GROUPE_3). Languages: DA=Danish, DE=German, EN=English, ES=Spanish, FR=French, IT=Italian, PL=Polish, PT=Portuguese.
+table V_FAMILLE_GROUPE_N3
+
+	/// Product family group code level 1 (parent)
+	column CODE_FAMILLE_GROUPE_1
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CODE_FAMILLE_GROUPE_1
+
+	/// Product family group code level 2 (parent)
+	column CODE_FAMILLE_GROUPE_2
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CODE_FAMILLE_GROUPE_2
+
+	/// Product family group code level 3 (sous-sous-famille).
+	column CODE_FAMILLE_GROUPE_3
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CODE_FAMILLE_GROUPE_3
+
+	/// Product family label level 3 (sous-sous-famille) in Danish
+	column FAMILY_LABEL_DA_3
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FAMILY_LABEL_DA_3
+
+	/// Product family label level 3 (sous-sous-famille) in German
+	column FAMILY_LABEL_DE_3
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FAMILY_LABEL_DE_3
+
+	/// Product family label level 3 (sous-sous-famille) in English
+	column FAMILY_LABEL_EN_3
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FAMILY_LABEL_EN_3
+
+	/// Product family label level 3 (sous-sous-famille) in Spanish
+	column FAMILY_LABEL_ES_3
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FAMILY_LABEL_ES_3
+
+	/// Product family label level 3 (sous-sous-famille) in French
+	column FAMILY_LABEL_FR_3
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FAMILY_LABEL_FR_3
+
+	/// Product family label level 3 (sous-sous-famille) in Italian
+	column FAMILY_LABEL_IT_3
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FAMILY_LABEL_IT_3
+
+	/// Product family label level 3 (sous-sous-famille) in Polish
+	column FAMILY_LABEL_PL_3
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FAMILY_LABEL_PL_3
+
+	/// Product family label level 3 (sous-sous-famille) in Portuguese
+	column FAMILY_LABEL_PT_3
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FAMILY_LABEL_PT_3
+
+	/// Active flag for the family combination (1=active, 0=inactive)
+	column FLAG_ACTIF
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FLAG_ACTIF
+
+	column __rel_DWH_KPI_MOIS_GROUPE_FAMILLE_N3
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: __rel_DWH_KPI_MOIS_GROUPE_FAMILLE_N3
+
+	partition V_FAMILLE_GROUPE_N3 = m
+		mode: import
+		source =
+			let
+			    Source = Snowflake.Databases(SnowflakeServer, SnowflakeWarehouse, [Role = SnowflakeRole]),
+			    Database = Source{[Name = "DWHP"]}[Data],
+			    Schema = Database{[Name = "GROUPE"]}[Data],
+			    SourceTable = Schema{[Name = "V_FAMILLE_GROUPE_N3"]}[Data],
+			    SelectedColumns = Table.SelectColumns(SourceTable, {"CODE_FAMILLE_GROUPE_1", "CODE_FAMILLE_GROUPE_2", "CODE_FAMILLE_GROUPE_3", "LIB_FAMILLE_GROUPE_DA_3", "LIB_FAMILLE_GROUPE_DE_3", "LIB_FAMILLE_GROUPE_EN_3", "LIB_FAMILLE_GROUPE_ES_3", "LIB_FAMILLE_GROUPE_FR_3", "LIB_FAMILLE_GROUPE_IT_3", "LIB_FAMILLE_GROUPE_PL_3", "LIB_FAMILLE_GROUPE_PT_3", "FLAG_ACTIF"}),
+			    RenamedColumns = Table.RenameColumns(SelectedColumns, {{"LIB_FAMILLE_GROUPE_DA_3", "FAMILY_LABEL_DA_3"}, {"LIB_FAMILLE_GROUPE_DE_3", "FAMILY_LABEL_DE_3"}, {"LIB_FAMILLE_GROUPE_EN_3", "FAMILY_LABEL_EN_3"}, {"LIB_FAMILLE_GROUPE_ES_3", "FAMILY_LABEL_ES_3"}, {"LIB_FAMILLE_GROUPE_FR_3", "FAMILY_LABEL_FR_3"}, {"LIB_FAMILLE_GROUPE_IT_3", "FAMILY_LABEL_IT_3"}, {"LIB_FAMILLE_GROUPE_PL_3", "FAMILY_LABEL_PL_3"}, {"LIB_FAMILLE_GROUPE_PT_3", "FAMILY_LABEL_PT_3"}}),
+			    AddedRelationshipKey1 = Table.AddColumn(RenamedColumns, "__rel_DWH_KPI_MOIS_GROUPE_FAMILLE_N3", each Text.Combine(List.Transform({[CODE_FAMILLE_GROUPE_1], [CODE_FAMILLE_GROUPE_2], [CODE_FAMILLE_GROUPE_3]}, each if _ = null then "-1:" else Text.From(Text.Length(Text.From(_))) & ":" & Text.From(_)), "|"), type text)
+			in
+			    AddedRelationshipKey1

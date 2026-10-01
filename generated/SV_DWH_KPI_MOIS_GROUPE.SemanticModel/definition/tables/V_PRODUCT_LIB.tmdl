@@ -1,0 +1,69 @@
+/// Reference table for product names (racines) with multilingual labels. One row per unique CODE_PRODUIT. Languages: DA=Danish, DE=German, EN=English, ES=Spanish, FR=French, IT=Italian, PL=Polish, PT=Portuguese.
+table V_PRODUCT_LIB
+
+	/// Unique product code (racine).
+	column PRODUCT_CODE
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PRODUCT_CODE
+
+	/// Product name (racine) in Danish
+	column PRODUCT_NAME_DA
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PRODUCT_NAME_DA
+
+	/// Product name (racine) in German
+	column PRODUCT_NAME_DE
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PRODUCT_NAME_DE
+
+	/// Product name (racine) in English
+	column PRODUCT_NAME_EN
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PRODUCT_NAME_EN
+
+	/// Product name (racine) in Spanish
+	column PRODUCT_NAME_ES
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PRODUCT_NAME_ES
+
+	/// Product name (racine) in French
+	column PRODUCT_NAME_FR
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PRODUCT_NAME_FR
+
+	/// Product name (racine) in Italian
+	column PRODUCT_NAME_IT
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PRODUCT_NAME_IT
+
+	/// Product name (racine) in Polish
+	column PRODUCT_NAME_PL
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PRODUCT_NAME_PL
+
+	/// Product name (racine) in Portuguese
+	column PRODUCT_NAME_PT
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PRODUCT_NAME_PT
+
+	partition V_PRODUCT_LIB = m
+		mode: import
+		source =
+			let
+			    Source = Snowflake.Databases(SnowflakeServer, SnowflakeWarehouse, [Role = SnowflakeRole]),
+			    Database = Source{[Name = "DWHP"]}[Data],
+			    Schema = Database{[Name = "GROUPE"]}[Data],
+			    SourceTable = Schema{[Name = "V_PRODUCT_LIB"]}[Data],
+			    SelectedColumns = Table.SelectColumns(SourceTable, {"CODE_PRODUIT", "LIB_PRODUIT_DA", "LIB_PRODUIT_DE", "LIB_PRODUIT_EN", "LIB_PRODUIT_ES", "LIB_PRODUIT_FR", "LIB_PRODUIT_IT", "LIB_PRODUIT_PL", "LIB_PRODUIT_PT"}),
+			    RenamedColumns = Table.RenameColumns(SelectedColumns, {{"CODE_PRODUIT", "PRODUCT_CODE"}, {"LIB_PRODUIT_DA", "PRODUCT_NAME_DA"}, {"LIB_PRODUIT_DE", "PRODUCT_NAME_DE"}, {"LIB_PRODUIT_EN", "PRODUCT_NAME_EN"}, {"LIB_PRODUIT_ES", "PRODUCT_NAME_ES"}, {"LIB_PRODUIT_FR", "PRODUCT_NAME_FR"}, {"LIB_PRODUIT_IT", "PRODUCT_NAME_IT"}, {"LIB_PRODUIT_PL", "PRODUCT_NAME_PL"}, {"LIB_PRODUIT_PT", "PRODUCT_NAME_PT"}})
+			in
+			    RenamedColumns

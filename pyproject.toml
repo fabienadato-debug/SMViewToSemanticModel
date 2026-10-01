@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "smview2pbip"
+version = "0.1.0"
+description = "Convert Snowflake Semantic View YAML definitions to Power BI PBIP/TMDL projects."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.10,<3",
+    "PyYAML>=6.0,<7",
+    "sqlglot>=26,<27",
+    "typer>=0.15,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<9",
+    "ruff>=0.9,<1",
+]
+
+[project.scripts]
+smview2pbip = "smview2pbip.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/smview2pbip"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

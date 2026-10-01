@@ -1,0 +1,412 @@
+/// Aggregated Business View with monthly KPIs for International.
+table DWH_KPI_MOIS_GROUPE
+
+	/// Average percentage of equipment in control during the month
+	measure CONTROL_RATE = DIVIDE((100 * SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_CONTROL])), SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_TOTAL]), 0)
+		formatString: #,##0.0
+		displayFolder: Metrics
+
+	/// Average percentage of equipment in failure during the month
+	measure FAILURE_RATE = DIVIDE((100 * SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_FAILURE])), SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_TOTAL]), 0)
+		formatString: #,##0.0
+		displayFolder: Metrics
+
+	/// Monthly total turnover target (rental + services) per branch and level 2 product family in local currency. Objectives are defined at BRANCH x Level 2 FAMILY CODE x MONTH; no finer level of detail exists (neither at the Level 3 family nor at the racine level).
+	measure OBJECTIVE_TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__OBJECTIVE_TURNOVER])
+		formatString: #,##0.00
+		displayFolder: Facts
+
+	/// Percentage of total turnover (rental + services) objective achieved. Computed at BRANCH x FAMILY_CODE_2 x MONTH level (the finest granularity available for objectives). RATIO: recompute from SUM(base_measures) for grand totals, do NOT average.
+	/// ⚠️ Important: This metric correctly handles the sparse model by summing actuals and objectives separately before division. Do NOT apply objective filters to actual turnover queries.
+	measure OBJECTIVE_TURNOVER_RATE = ROUND(DIVIDE((100 * SUM('DWH_KPI_MOIS_GROUPE'[__TURNOVER])), SUM('DWH_KPI_MOIS_GROUPE'[__OBJECTIVE_TURNOVER]), 0), 1)
+		formatString: #,##0.0
+		displayFolder: Metrics
+
+	/// Occupancy rate in QUANTITY. If user doesn't specify unit, ask: quantity or IV?
+	measure OCCUPANCY_RATE = DIVIDE((100 * SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_OCCUPANCY])), SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_TOTAL]), 0)
+		formatString: #,##0.0
+		displayFolder: Metrics
+
+	/// Occupancy rate in INVENTORY VALUE (IV). If user doesn't specify unit, ask: quantity or IV?
+	measure OCCUPANCY_RATE_IV = DIVIDE((100 * SUM('DWH_KPI_MOIS_GROUPE'[__KPI_TAUX_TECH_VI_OCCUPATION])), SUM('DWH_KPI_MOIS_GROUPE'[__KPI_TAUX_TECH_VI_TOTAL]), 0)
+		formatString: #,##0.0
+		displayFolder: Metrics
+
+	/// Rental Turnover.
+	measure RENTAL_TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__RENTAL_TURNOVER])
+		formatString: #,##0.00
+		displayFolder: Facts
+
+	/// Rotation calculated monthly and multiplied by 12 to provide a 12-month equivalent.
+	measure ROTATION_12_MONTHS_EQUIVALENT = ROUND(DIVIDE((12 * SUM('DWH_KPI_MOIS_GROUPE'[__RENTAL_TURNOVER])), SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_IV]), 0), 3)
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Rotation calculated over the Last 12 Months. CRITICAL: Both KPI_CA_LOCATION_LTM_HT_DEV (numerator) and KPI_STKQTETOT_VI_LTM_DEV (denominator) are rolling 12-month values. They are POINT-IN-TIME: each monthly row already contains the 12-month rolling figure. NEVER compute this metric across multiple months — always filter on a single YEAR_MONTH (the last available period). For example, Rotation LTM 2025 = WHERE YEAR_MONTH = '202512'.
+	measure ROTATION_LTM = ROUND(DIVIDE(SUM('DWH_KPI_MOIS_GROUPE'[__TURNOVER_RENTAL_LTM]), SUM('DWH_KPI_MOIS_GROUPE'[__KPI_STKQTETOT_VI_LTM_DEV]), 0), 3)
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Consumable turnover (part of Services).
+	measure SERVICES_CONSUMABLE_TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__KPI_CA_CONSOMMABLE_HT_DEV])
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Gas turnover (part of Services).
+	measure SERVICES_GAS_TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__KPI_CA_CARBURANT_HT_DEV])
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Insurance turnover (part of Services).
+	measure SERVICES_INSURANCE_TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__KPI_CA_GARANTIE_BRIS_DE_MACHINE_HT_DEV])
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Labor cleaning and spare part turnover (part of Services).
+	measure SERVICES_LABOR_CLEANING_SPARE_PART_TURNOVER = SUMX('DWH_KPI_MOIS_GROUPE', ('DWH_KPI_MOIS_GROUPE'[__KPI_CA_NETTOYAGE_ET_MAIN_OEUVRE_HT_DEV] + 'DWH_KPI_MOIS_GROUPE'[__KPI_CA_PIECES_ET_REPARATION_HT_DEV]))
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Subrental turnover (part of Services).
+	measure SERVICES_SUBRENTAL_TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__KPI_CA_SOUS_LOCATION_HT_DEV])
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Transport turnover (part of Services).
+	measure SERVICES_TRANSPORT_TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__KPI_CA_LOGISTIQUE_HT_DEV])
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Services turnover (transports, insurances, consumables...).
+	measure SERVICES_TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__KPI_CA_SERVICES_HT_DEV])
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Equipment in control. Position indicator: for multi-month, use SUM/COUNT(DISTINCT month).
+	measure STOCK_CONTROL = SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_CONTROL])
+		formatString: #,##0.00
+		displayFolder: Facts
+
+	/// Equipment in failure. Position indicator: for multi-month, use SUM/COUNT(DISTINCT month).
+	measure STOCK_FAILURE = SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_FAILURE])
+		formatString: #,##0.00
+		displayFolder: Facts
+
+	/// Stock in IV at end of month. Position indicator. If user asks for stock without specifying unit, ask: IV or quantity?
+	measure STOCK_IV = SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_IV])
+		formatString: #,##0.00
+		displayFolder: Facts
+
+	/// Equipment rented. Position indicator: for multi-month, use SUM/COUNT(DISTINCT month).
+	measure STOCK_OCCUPANCY = SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_OCCUPANCY])
+		formatString: #,##0.00
+		displayFolder: Facts
+
+	/// Stock in Quantity at end of month. Position indicator. If user asks for stock without specifying unit, ask: IV or quantity?
+	measure STOCK_QTY = SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_QTY])
+		formatString: #,##0
+		displayFolder: Facts
+
+	/// Rental stock valued at IV. Position indicator: for multi-month, use SUM/COUNT(DISTINCT month).
+	measure STOCK_RENTAL_VI = SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_RENTAL_VI])
+		formatString: #,##0.00
+		displayFolder: Facts
+
+	/// Total stock of equipment. Position indicator: for multi-month, use SUM/COUNT(DISTINCT month).
+	measure STOCK_TOTAL = SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_TOTAL])
+		formatString: #,##0.00
+		displayFolder: Facts
+
+	/// Tariff index = (1000 * SUM(turnover_rental_tariff_index)) / SUM(stock_rental_vi). RATIO: for grand total, recompute from base sums, do NOT average.
+	measure TARIFF_INDEX = ROUND(DIVIDE((1000 * SUM('DWH_KPI_MOIS_GROUPE'[__TURNOVER_RENTAL_TARIFF_INDEX])), SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_RENTAL_VI]), 0), 2)
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Monthly total turnover target (rental + services) per branch and level 2 product family in local currency. Objectives are defined at BRANCH x Level 2 FAMILY CODE x MONTH; no finer level of detail exists (neither at the Level 3 family nor at the racine level).
+	measure TOTAL_OBJECTIVE_TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__OBJECTIVE_TURNOVER])
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Total services turnover (transports, insurances, consumables...).
+	measure TOTAL_SERVICES_TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__KPI_CA_SERVICES_HT_DEV])
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Total Turnover in local currency (Rental + Services). Default when type not specified.
+	measure TOTAL_TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__TURNOVER])
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Total sum of rental invoice lines
+	measure TOTAL_TURNOVER_RENTAL = SUM('DWH_KPI_MOIS_GROUPE'[__RENTAL_TURNOVER])
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Rental turnover accumulated over the Last 12 Months (rolling). This is a POINT-IN-TIME value: each monthly row already contains the sum of the previous 12 months. NEVER sum across multiple months. To get the LTM turnover, filter on a single YEAR_MONTH (the last available one). For example, LTM 2025 = YEAR_MONTH '202512'.
+	measure TOTAL_TURNOVER_RENTAL_LTM = SUM('DWH_KPI_MOIS_GROUPE'[__TURNOVER_RENTAL_LTM])
+		formatString: #,##0.00
+		displayFolder: Metrics
+
+	/// Total Turnover in local currency (Rental + Services). Default when type not specified.
+	measure TURNOVER = SUM('DWH_KPI_MOIS_GROUPE'[__TURNOVER])
+		formatString: #,##0.00
+		displayFolder: Facts
+
+	/// Rental turnover LTM (rolling 12 months) — POINT-IN-TIME value. Each row already contains the rolling 12-month total. DO NOT sum across multiple months — this would double-count revenue. Use only on a single YEAR_MONTH (the last available period).
+	measure TURNOVER_RENTAL_LTM = SUM('DWH_KPI_MOIS_GROUPE'[__TURNOVER_RENTAL_LTM])
+		formatString: #,##0.00
+		displayFolder: Facts
+
+	/// Turnover Tariff Index Rental
+	measure TURNOVER_RENTAL_TARIFF_INDEX = SUM('DWH_KPI_MOIS_GROUPE'[__TURNOVER_RENTAL_TARIFF_INDEX])
+		formatString: #,##0.00
+		displayFolder: Facts
+
+	/// Average percentage of equipment unavailable during the month
+	measure UNAVAILABILITY_RATE = DIVIDE((100 * SUMX('DWH_KPI_MOIS_GROUPE', ('DWH_KPI_MOIS_GROUPE'[__STOCK_FAILURE] + 'DWH_KPI_MOIS_GROUPE'[__STOCK_CONTROL]))), SUM('DWH_KPI_MOIS_GROUPE'[__STOCK_TOTAL]), 0)
+		formatString: #,##0.0
+		displayFolder: Metrics
+
+	/// Branch code
+	column BRANCH_CODE
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BRANCH_CODE
+
+	/// Entity code. French specialties: KE, KM, KSI, LOCA. International: DE, DK, ES, IT, PL, PT. No 'FR' code exists.
+	column COUNTRY_CODE
+		dataType: string
+		summarizeBy: none
+		sourceColumn: COUNTRY_CODE
+
+	/// Product family level 1 code (gamme). Standard rental families: A = Earthmoving (TP/Terrassement), B = Access/Lifting (Élévation), C = Vehicles (Véhicules), D = Tools (Outillage), E = Modules & WC (Modulaires, bungalows, containers, sanitaires), F = Energy (NRJ - groupes électrogènes, compresseurs, chauffage, climatisation), G = Other Specialties (Autres Spécialités). Non-rental codes include 90 (Services), 51/53/54 (service sub-families), X/N/ND/Z (other). IMPORTANT: 'Other Specialties' or 'Autres Spécialités' means ONLY FAMILY_CODE_1 = 'G'. Never use NOT IN or a catch-all clause to represent it.
+	column FAMILY_CODE_1
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FAMILY_CODE_1
+
+	/// Product family level 2 code (sous-famille). To get the human-readable label, ALWAYS join to V_FAMILLE_GROUPE_N2 on (FAMILY_CODE_1, FAMILY_CODE_2) = (CODE_FAMILLE_GROUPE_1, CODE_FAMILLE_GROUPE_2) and include FAMILY_LABEL_FR_2 (or the appropriate language) in the result.
+	column FAMILY_CODE_2
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FAMILY_CODE_2
+
+	/// Product family level 3 code (sous-sous-famille). To get the human-readable label, ALWAYS join to V_FAMILLE_GROUPE_N3 on (FAMILY_CODE_1, FAMILY_CODE_2, FAMILY_CODE_3) = (CODE_FAMILLE_GROUPE_1, CODE_FAMILLE_GROUPE_2, CODE_FAMILLE_GROUPE_3) and include FAMILY_LABEL_FR_3 (or the appropriate language) in the result.
+	column FAMILY_CODE_3
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FAMILY_CODE_3
+
+	/// The Racine is the name of the products rented by the company. A Racine is a code on 6 characters.
+	column RACINE_CODE
+		dataType: string
+		summarizeBy: none
+		sourceColumn: RACINE_CODE
+
+	/// Year-Month format YYYYMM
+	column YEAR_MONTH
+		dataType: string
+		summarizeBy: none
+		sourceColumn: YEAR_MONTH
+
+	/// Monthly total turnover target (rental + services) per branch and level 2 product family in local currency. Objectives are defined at BRANCH x Level 2 FAMILY CODE x MONTH; no finer level of detail exists (neither at the Level 3 family nor at the racine level).
+	column __OBJECTIVE_TURNOVER
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __OBJECTIVE_TURNOVER
+
+	/// Rental Turnover.
+	column __RENTAL_TURNOVER
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __RENTAL_TURNOVER
+
+	/// Equipment in control. Position indicator: for multi-month, use SUM/COUNT(DISTINCT month).
+	column __STOCK_CONTROL
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __STOCK_CONTROL
+
+	/// Equipment in failure. Position indicator: for multi-month, use SUM/COUNT(DISTINCT month).
+	column __STOCK_FAILURE
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __STOCK_FAILURE
+
+	/// Stock in IV at end of month. Position indicator. If user asks for stock without specifying unit, ask: IV or quantity?
+	column __STOCK_IV
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __STOCK_IV
+
+	/// Equipment rented. Position indicator: for multi-month, use SUM/COUNT(DISTINCT month).
+	column __STOCK_OCCUPANCY
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __STOCK_OCCUPANCY
+
+	/// Stock in Quantity at end of month. Position indicator. If user asks for stock without specifying unit, ask: IV or quantity?
+	column __STOCK_QTY
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __STOCK_QTY
+
+	/// Rental stock valued at IV. Position indicator: for multi-month, use SUM/COUNT(DISTINCT month).
+	column __STOCK_RENTAL_VI
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __STOCK_RENTAL_VI
+
+	/// Total stock of equipment. Position indicator: for multi-month, use SUM/COUNT(DISTINCT month).
+	column __STOCK_TOTAL
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __STOCK_TOTAL
+
+	/// Total Turnover in local currency (Rental + Services). Default when type not specified.
+	column __TURNOVER
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __TURNOVER
+
+	/// Rental turnover LTM (rolling 12 months) — POINT-IN-TIME value. Each row already contains the rolling 12-month total. DO NOT sum across multiple months — this would double-count revenue. Use only on a single YEAR_MONTH (the last available period).
+	column __TURNOVER_RENTAL_LTM
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __TURNOVER_RENTAL_LTM
+
+	/// Turnover Tariff Index Rental
+	column __TURNOVER_RENTAL_TARIFF_INDEX
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __TURNOVER_RENTAL_TARIFF_INDEX
+
+	/// Physical source column inferred from metric OCCUPANCY_RATE_IV.
+	column __KPI_TAUX_TECH_VI_OCCUPATION
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __KPI_TAUX_TECH_VI_OCCUPATION
+
+	/// Physical source column inferred from metric OCCUPANCY_RATE_IV.
+	column __KPI_TAUX_TECH_VI_TOTAL
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __KPI_TAUX_TECH_VI_TOTAL
+
+	/// Physical source column inferred from metric ROTATION_LTM.
+	column __KPI_STKQTETOT_VI_LTM_DEV
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __KPI_STKQTETOT_VI_LTM_DEV
+
+	/// Physical source column inferred from metric SERVICES_CONSUMABLE_TURNOVER.
+	column __KPI_CA_CONSOMMABLE_HT_DEV
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __KPI_CA_CONSOMMABLE_HT_DEV
+
+	/// Physical source column inferred from metric SERVICES_GAS_TURNOVER.
+	column __KPI_CA_CARBURANT_HT_DEV
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __KPI_CA_CARBURANT_HT_DEV
+
+	/// Physical source column inferred from metric SERVICES_INSURANCE_TURNOVER.
+	column __KPI_CA_GARANTIE_BRIS_DE_MACHINE_HT_DEV
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __KPI_CA_GARANTIE_BRIS_DE_MACHINE_HT_DEV
+
+	/// Physical source column inferred from metric SERVICES_LABOR_CLEANING_SPARE_PART_TURNOVER.
+	column __KPI_CA_NETTOYAGE_ET_MAIN_OEUVRE_HT_DEV
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __KPI_CA_NETTOYAGE_ET_MAIN_OEUVRE_HT_DEV
+
+	/// Physical source column inferred from metric SERVICES_LABOR_CLEANING_SPARE_PART_TURNOVER.
+	column __KPI_CA_PIECES_ET_REPARATION_HT_DEV
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __KPI_CA_PIECES_ET_REPARATION_HT_DEV
+
+	/// Physical source column inferred from metric SERVICES_SUBRENTAL_TURNOVER.
+	column __KPI_CA_SOUS_LOCATION_HT_DEV
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __KPI_CA_SOUS_LOCATION_HT_DEV
+
+	/// Physical source column inferred from metric SERVICES_TRANSPORT_TURNOVER.
+	column __KPI_CA_LOGISTIQUE_HT_DEV
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __KPI_CA_LOGISTIQUE_HT_DEV
+
+	/// Physical source column inferred from metric SERVICES_TURNOVER.
+	column __KPI_CA_SERVICES_HT_DEV
+		dataType: decimal
+		isHidden
+		summarizeBy: none
+		sourceColumn: __KPI_CA_SERVICES_HT_DEV
+
+	column __rel_DWH_KPI_MOIS_GROUPE_DWH_UO
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: __rel_DWH_KPI_MOIS_GROUPE_DWH_UO
+
+	column __rel_DWH_KPI_MOIS_GROUPE_FAMILLE_N2
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: __rel_DWH_KPI_MOIS_GROUPE_FAMILLE_N2
+
+	column __rel_DWH_KPI_MOIS_GROUPE_FAMILLE_N3
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: __rel_DWH_KPI_MOIS_GROUPE_FAMILLE_N3
+
+	column __rel_DWH_KPI_MOIS_GROUPE_V_PRODUCT
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: __rel_DWH_KPI_MOIS_GROUPE_V_PRODUCT
+
+	partition DWH_KPI_MOIS_GROUPE = m
+		mode: import
+		source =
+			let
+			    Source = Snowflake.Databases(SnowflakeServer, SnowflakeWarehouse, [Role = SnowflakeRole]),
+			    Database = Source{[Name = "DWHP"]}[Data],
+			    Schema = Database{[Name = "GROUPE"]}[Data],
+			    SourceTable = Schema{[Name = "DWH_KPI_MOIS_GROUPE"]}[Data],
+			    SelectedColumns = Table.SelectColumns(SourceTable, {"AGECOD", "PAYCOD", "FAMCOD1", "FAMCOD2", "FAMCOD3", "RACCOD", "PERANNMOI", "KPI_OBJ_CA_FAMILLE_DEV", "KPI_CA_LOCATION_HT_DEV", "KPI_TAUX_TECH_CONTROLE", "KPI_TAUX_TECH_PANNE", "KPI_STKQTETOT_VI_DEV", "KPI_TAUX_TECH_OCCUPATION", "KPI_STKQTETOT", "KPI_INDICE_TARIFAIRE_STKQTELOU_VI_DEV", "KPI_TAUX_TECH_TOTAL", "KPI_CA_TOTAL_HT_DEV", "KPI_CA_LOCATION_LTM_HT_DEV", "KPI_INDICE_TARIFAIRE_CA_LOCATION_HT_DEV", "KPI_TAUX_TECH_VI_OCCUPATION", "KPI_TAUX_TECH_VI_TOTAL", "KPI_STKQTETOT_VI_LTM_DEV", "KPI_CA_CONSOMMABLE_HT_DEV", "KPI_CA_CARBURANT_HT_DEV", "KPI_CA_GARANTIE_BRIS_DE_MACHINE_HT_DEV", "KPI_CA_NETTOYAGE_ET_MAIN_OEUVRE_HT_DEV", "KPI_CA_PIECES_ET_REPARATION_HT_DEV", "KPI_CA_SOUS_LOCATION_HT_DEV", "KPI_CA_LOGISTIQUE_HT_DEV", "KPI_CA_SERVICES_HT_DEV"}),
+			    RenamedColumns = Table.RenameColumns(SelectedColumns, {{"AGECOD", "BRANCH_CODE"}, {"PAYCOD", "COUNTRY_CODE"}, {"FAMCOD1", "FAMILY_CODE_1"}, {"FAMCOD2", "FAMILY_CODE_2"}, {"FAMCOD3", "FAMILY_CODE_3"}, {"RACCOD", "RACINE_CODE"}, {"PERANNMOI", "YEAR_MONTH"}, {"KPI_OBJ_CA_FAMILLE_DEV", "__OBJECTIVE_TURNOVER"}, {"KPI_CA_LOCATION_HT_DEV", "__RENTAL_TURNOVER"}, {"KPI_TAUX_TECH_CONTROLE", "__STOCK_CONTROL"}, {"KPI_TAUX_TECH_PANNE", "__STOCK_FAILURE"}, {"KPI_STKQTETOT_VI_DEV", "__STOCK_IV"}, {"KPI_TAUX_TECH_OCCUPATION", "__STOCK_OCCUPANCY"}, {"KPI_STKQTETOT", "__STOCK_QTY"}, {"KPI_INDICE_TARIFAIRE_STKQTELOU_VI_DEV", "__STOCK_RENTAL_VI"}, {"KPI_TAUX_TECH_TOTAL", "__STOCK_TOTAL"}, {"KPI_CA_TOTAL_HT_DEV", "__TURNOVER"}, {"KPI_CA_LOCATION_LTM_HT_DEV", "__TURNOVER_RENTAL_LTM"}, {"KPI_INDICE_TARIFAIRE_CA_LOCATION_HT_DEV", "__TURNOVER_RENTAL_TARIFF_INDEX"}, {"KPI_TAUX_TECH_VI_OCCUPATION", "__KPI_TAUX_TECH_VI_OCCUPATION"}, {"KPI_TAUX_TECH_VI_TOTAL", "__KPI_TAUX_TECH_VI_TOTAL"}, {"KPI_STKQTETOT_VI_LTM_DEV", "__KPI_STKQTETOT_VI_LTM_DEV"}, {"KPI_CA_CONSOMMABLE_HT_DEV", "__KPI_CA_CONSOMMABLE_HT_DEV"}, {"KPI_CA_CARBURANT_HT_DEV", "__KPI_CA_CARBURANT_HT_DEV"}, {"KPI_CA_GARANTIE_BRIS_DE_MACHINE_HT_DEV", "__KPI_CA_GARANTIE_BRIS_DE_MACHINE_HT_DEV"}, {"KPI_CA_NETTOYAGE_ET_MAIN_OEUVRE_HT_DEV", "__KPI_CA_NETTOYAGE_ET_MAIN_OEUVRE_HT_DEV"}, {"KPI_CA_PIECES_ET_REPARATION_HT_DEV", "__KPI_CA_PIECES_ET_REPARATION_HT_DEV"}, {"KPI_CA_SOUS_LOCATION_HT_DEV", "__KPI_CA_SOUS_LOCATION_HT_DEV"}, {"KPI_CA_LOGISTIQUE_HT_DEV", "__KPI_CA_LOGISTIQUE_HT_DEV"}, {"KPI_CA_SERVICES_HT_DEV", "__KPI_CA_SERVICES_HT_DEV"}}),
+			    AddedRelationshipKey1 = Table.AddColumn(RenamedColumns, "__rel_DWH_KPI_MOIS_GROUPE_DWH_UO", each Text.Combine(List.Transform({[COUNTRY_CODE], [BRANCH_CODE]}, each if _ = null then "-1:" else Text.From(Text.Length(Text.From(_))) & ":" & Text.From(_)), "|"), type text),
+			    AddedRelationshipKey2 = Table.AddColumn(AddedRelationshipKey1, "__rel_DWH_KPI_MOIS_GROUPE_FAMILLE_N2", each Text.Combine(List.Transform({[FAMILY_CODE_1], [FAMILY_CODE_2]}, each if _ = null then "-1:" else Text.From(Text.Length(Text.From(_))) & ":" & Text.From(_)), "|"), type text),
+			    AddedRelationshipKey3 = Table.AddColumn(AddedRelationshipKey2, "__rel_DWH_KPI_MOIS_GROUPE_FAMILLE_N3", each Text.Combine(List.Transform({[FAMILY_CODE_1], [FAMILY_CODE_2], [FAMILY_CODE_3]}, each if _ = null then "-1:" else Text.From(Text.Length(Text.From(_))) & ":" & Text.From(_)), "|"), type text),
+			    AddedRelationshipKey4 = Table.AddColumn(AddedRelationshipKey3, "__rel_DWH_KPI_MOIS_GROUPE_V_PRODUCT", each Text.Combine(List.Transform({[COUNTRY_CODE], [RACINE_CODE]}, each if _ = null then "-1:" else Text.From(Text.Length(Text.From(_))) & ":" & Text.From(_)), "|"), type text)
+			in
+			    AddedRelationshipKey4
